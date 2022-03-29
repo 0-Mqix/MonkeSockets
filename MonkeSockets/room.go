@@ -5,8 +5,6 @@ package MonkeSockets
 
 import (
 	"bytes"
-
-	"github.com/labstack/echo/v4"
 )
 
 type Room struct {
@@ -63,9 +61,4 @@ func (r *Room) Broadcast(message []byte) {
 	for c := range r.clients {
 		c.SendMessage(message)
 	}
-}
-
-func (r *Room) WebSocket(e echo.Context) error {
-	ServeWs(r, e)
-	return nil
 }

@@ -106,10 +106,10 @@ func (c *Client) writePump() {
 }
 
 // serveWs handles websocket requests from the peer.
-func ServeWs(room *Room, c echo.Context) {
+func (room *Room) WebSocket(c echo.Context) error {
 	conn, err := upgrader.Upgrade(c.Response().Writer, c.Request(), nil)
 	if err != nil {
-		return
+		return nil
 	}
 	client := &Client{room: room, conn: conn, send: make(chan []byte, 256)}
 	client.room.register <- client
@@ -118,6 +118,7 @@ func ServeWs(room *Room, c echo.Context) {
 	// new goroutines.
 	go client.writePump()
 	go client.readPump()
+	return nil
 }
 
 //sends message to the client
