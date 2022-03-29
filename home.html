@@ -28,7 +28,7 @@ window.onload = function () {
             test: "monke"
         }
 
-        conn.send("chat" + ":" + JSON.stringify(data));
+        conn.send("chat:" + JSON.stringify(data));
 
         msg.value = "";
         return false;

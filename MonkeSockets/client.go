@@ -1,8 +1,7 @@
 // Copyright 2013 The Gorilla WebSocket Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+//Modified by MqixSchool
 
-package main
+package MonkeSockets
 
 import (
 	"bytes"
@@ -13,16 +12,9 @@ import (
 )
 
 const (
-	// Time allowed to write a message to the peer.
-	writeWait = 10 * time.Second
-
-	// Time allowed to read the next pong message from the peer.
-	pongWait = 60 * time.Second
-
-	// Send pings to peer with this period. Must be less than pongWait.
-	pingPeriod = (pongWait * 9) / 10
-
-	// Maximum message size allowed from peer.
+	writeWait      = 10 * time.Second
+	pongWait       = 60 * time.Second
+	pingPeriod     = (pongWait * 9) / 10
 	maxMessageSize = 512
 )
 
@@ -36,22 +28,17 @@ var upgrader = websocket.Upgrader{
 	WriteBufferSize: 1024,
 }
 
-// Client is a middleman between the websocket connection and the hub.
 type Client struct {
 	room *Room
-
-	// The websocket connection.
 	conn *websocket.Conn
-
-	// Buffered channel of outbound messages.
 	send chan []byte
 }
 
-// readPump pumps messages from the websocket connection to the hub.
-//
-// The application runs readPump in a per-connection goroutine. The application
-// ensures that there is at most one reader on a connection by executing all
-// reads from this goroutine.
+type SocketMessage struct {
+	Client  *Client
+	Message []byte
+}
+
 func (c *Client) readPump() {
 	defer func() {
 		c.room.unregister <- c
@@ -68,7 +55,7 @@ func (c *Client) readPump() {
 			break
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-		c.room.broadcast <- message
+		c.room.message <- SocketMessage{Message: message, Client: c}
 	}
 }
 
@@ -119,7 +106,7 @@ func (c *Client) writePump() {
 }
 
 // serveWs handles websocket requests from the peer.
-func serveWs(room *Room, c echo.Context) {
+func ServeWs(room *Room, c echo.Context) {
 	conn, err := upgrader.Upgrade(c.Response().Writer, c.Request(), nil)
 	if err != nil {
 		return
@@ -131,4 +118,14 @@ func serveWs(room *Room, c echo.Context) {
 	// new goroutines.
 	go client.writePump()
 	go client.readPump()
+}
+
+//sends message to the client
+func (c *Client) SendMessage(message []byte) {
+	select {
+	case c.send <- message:
+	default:
+		close(c.send)
+		delete(c.room.clients, c)
+	}
 }
