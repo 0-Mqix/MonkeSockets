@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	ms "projects/chat/MonkeSockets"
+	"projects/chat/MonkeSockets"
 
 	"github.com/labstack/echo/v4"
 )
@@ -20,9 +20,9 @@ func main() {
 	e.File("/", "home.html")
 
 	//SOCKETS
-	room := ms.NewRoom()
+	room := MonkeSockets.NewRoom()
 
-	room.Events["chat:"] = func(r *ms.Room, c *ms.Client, message []byte) {
+	room.Events["chat:"] = func(r *MonkeSockets.Room, c *MonkeSockets.Client, message []byte) {
 		data := SocketMessageJsonIn{}
 		json.Unmarshal(message, &data)
 		r.Broadcast([]byte(data.Msg))
