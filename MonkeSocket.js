@@ -12,9 +12,13 @@ class MonkeSocket {
             this.conn.onmessage = function (e) {
                 var messages = e.data.split('\n')
                 for (var i = 0; i < messages.length; i++) {
-                    var split = messages[i].split(":", 2)
-                    var func = _this.events.get(split[0]+":")
-                    if (func != null) { func(split[1]); }
+                    
+                    var data = messages[i];
+                    var event = data.slice(0, data.indexOf(':') + 1);
+                    var message = data.slice(data.indexOf(':') + 1);
+                
+                    var func = _this.events.get(event)
+                    if (func != null) { func(message); }
                 }   
             }
         }
@@ -36,5 +40,3 @@ class MonkeSocket {
         conn.send(event+message);
     }
 }
-
-export default MonkeSocket
