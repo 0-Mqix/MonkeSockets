@@ -5,6 +5,8 @@ package MonkeSockets
 
 import (
 	"bytes"
+
+	"github.com/labstack/echo/v4"
 )
 
 type Room struct {
@@ -65,4 +67,20 @@ func (r *Room) Broadcast(event string, message []byte) {
 	for c := range r.clients {
 		c.SendMessage(event, message)
 	}
+}
+
+// serveWs handles websocket requests from the peer.
+func (room *Room) WebSocket(c echo.Context) error {
+	conn, err := upgrader.Upgrade(c.Response().Writer, c.Request(), nil)
+	if err != nil {
+		return nil
+	}
+	client := &Client{room: room, conn: conn, send: make(chan []byte, 256)}
+	client.room.register <- client
+
+	// Allow collection of memory referenced by the caller by doing all work in
+	// new goroutines.
+	go client.writePump()
+	go client.readPump()
+	return nil
 }
