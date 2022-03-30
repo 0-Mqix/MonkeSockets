@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"projects/chat/MonkeSockets"
 
 	"github.com/labstack/echo/v4"
@@ -18,17 +17,25 @@ type SocketMessageJsonIn struct {
 func main() {
 	e := echo.New()
 	e.File("/", "home.html")
-
+	e.File("/test", "test.html")
+	e.Static("/static", "./MonkeSocket")
 	//SOCKETS
 	room := MonkeSockets.NewRoom()
 
-	room.Events["chat:"] = func(r *MonkeSockets.Room, c *MonkeSockets.Client, message []byte) {
-		data := SocketMessageJsonIn{}
-		json.Unmarshal(message, &data)
-		r.Broadcast([]byte(data.Msg))
-	}
+	// room.Events["chat:"] = func(r *MonkeSockets.Room, c *MonkeSockets.Client, message []byte) {
+	// 	r.Broadcast("chat:", message)
+	// 	r.Broadcast("gun:", message)
+	// 	r.Broadcast("test:", message)
+	// }
+
+	room.On("chat:", func(r *MonkeSockets.Room, c *MonkeSockets.Client, message []byte) {
+		r.Broadcast("chat:", message)
+		r.Broadcast("gun:", message)
+		r.Broadcast("test:", message)
+	})
 
 	go room.Run()
+
 	e.GET("/ws", room.WebSocket)
 	//SOCKETS
 

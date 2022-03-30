@@ -24,8 +24,8 @@ func NewRoom() *Room {
 
 		//map were you can inject your own functions in that can use the room, client, and the message for all the incoming messages
 		Events: map[string]func(*Room, *Client, []byte){
-			"onJoin:":  func(r *Room, c *Client, message []byte) {},
-			"onLeave:": func(r *Room, c *Client, message []byte) {},
+			"join:":  func(r *Room, c *Client, message []byte) {},
+			"leave:": func(r *Room, c *Client, message []byte) {},
 		},
 	}
 }
@@ -35,10 +35,10 @@ func (r *Room) Run() {
 		select {
 		case client := <-r.register:
 			r.clients[client] = true
-			r.Events["onJoin:"](r, client, nil)
+			r.Events["join:"](r, client, nil)
 
 		case client := <-r.unregister:
-			r.Events["onLeave:"](r, client, nil)
+			r.Events["leave:"](r, client, nil)
 			_, ok := r.clients[client]
 
 			if ok {
@@ -57,8 +57,12 @@ func (r *Room) Run() {
 	}
 }
 
-func (r *Room) Broadcast(message []byte) {
+func (r *Room) On(event string, function func(*Room, *Client, []byte)) {
+	r.Events[event] = function
+}
+
+func (r *Room) Broadcast(event string, message []byte) {
 	for c := range r.clients {
-		c.SendMessage(message)
+		c.SendMessage(event, message)
 	}
 }

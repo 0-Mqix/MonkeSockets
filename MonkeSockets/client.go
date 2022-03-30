@@ -122,9 +122,9 @@ func (room *Room) WebSocket(c echo.Context) error {
 }
 
 //sends message to the client
-func (c *Client) SendMessage(message []byte) {
+func (c *Client) SendMessage(event string, message []byte) {
 	select {
-	case c.send <- message:
+	case c.send <- append([]byte(event), message...):
 	default:
 		close(c.send)
 		delete(c.room.clients, c)

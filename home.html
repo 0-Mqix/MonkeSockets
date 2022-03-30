@@ -3,6 +3,9 @@
 <head>
 <title>Chat Example</title>
 <script type="text/javascript">
+
+import MonkeSocket from MonkeSocket
+
 window.onload = function () {
     var conn;
     var msg = document.getElementById("msg");
@@ -23,12 +26,8 @@ window.onload = function () {
         if (!msg.value) {
             return false;
         }
-        var data = {
-            msg: msg.value,
-            test: "monke"
-        }
 
-        conn.send("chat:" + JSON.stringify(data));
+        conn.send(msg.value);
 
         msg.value = "";
         return false;
@@ -101,4 +100,5 @@ body {
     <input type="text" id="msg" size="64" autofocus />
 </form>
 </body>
+<script src="static/MonkeSocket.js"></script>
 </html>
