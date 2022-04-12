@@ -1,24 +1,23 @@
 class MonkeSocket {
-    events = new Map();
-    conn;
-    url;
+    events 
+    conn
 
     constructor(url) {
         if (window["WebSocket"]) {
-            this.url
+            this.events = new Map()
             this.conn = new WebSocket("ws://" + document.location.host + url)
         
             const _this = this;
-            this.conn.onmessage = function (e) {
+            this.conn.onmessage = (e) => {
                 var messages = e.data.split('\n')
-                for (var i = 0; i < messages.length; i++) {
+                for (let i = 0; i < messages.length; i++) {
                     
-                    var data = messages[i];
-                    var event = data.slice(0, data.indexOf(':') + 1);
-                    var message = data.slice(data.indexOf(':') + 1);
-                
-                    var func = _this.events.get(event)
-                    if (func != null) { func(message); }
+                    let data = messages[i]
+                    let event = data.slice(0, data.indexOf(':') + 1)
+                    let message = data.slice(data.indexOf(':') + 1)
+            
+                    let func = _this.events.get(event)
+                    if (func != null) func(message)
                 }   
             }
         }
@@ -37,6 +36,6 @@ class MonkeSocket {
     }
 
     send(event, message) {
-        conn.send(event+message);
+        this.conn.send(event+message)
     }
 }
