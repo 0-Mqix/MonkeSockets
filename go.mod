@@ -1,4 +1,4 @@
-module github.com/MqixSchool/MonkeSockets
+module github.com/0-Mqix/MonkeSockets
 
 go 1.18
 
