@@ -105,7 +105,7 @@ func (c *Client) writePump() {
 }
 
 //sends message to the client
-func (c *Client) SendMessage(event string, message []byte) {
+func (c *Client) Send(event string, message []byte) {
 	select {
 	case c.send <- append([]byte(event), message...):
 	default:

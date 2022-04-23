@@ -64,11 +64,11 @@ func (r *Room) On(event string, function func(*Room, *Client, []byte)) {
 
 func (r *Room) Broadcast(event string, message []byte) {
 	for c := range r.clients {
-		c.SendMessage(event, message)
+		c.Send(event, message)
 	}
 }
 
-// serveWs handles websocket requests from the peer.
+//websocket handles websocket requests from the peer.
 func (room *Room) WebSocket(c echo.Context) error {
 	conn, err := upgrader.Upgrade(c.Response().Writer, c.Request(), nil)
 	if err != nil {
