@@ -50,8 +50,8 @@ func (c *Client) readPump() {
 		_, message, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+				break
 			}
-			break
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 		c.room.message <- SocketMessage{Message: message, Client: c}
