@@ -47,9 +47,7 @@ func (c *Client) ReadPump() {
 	for {
 		_, message, err := c.Conn.ReadMessage()
 		if err != nil {
-			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				break
-			}
+			break
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 		for _, r := range c.Rooms {
@@ -111,7 +109,7 @@ func (c *Client) Send(event string, message []byte) {
 	default:
 		close(c.Channel)
 		for _, r := range c.Rooms {
-			delete(r.clients, c)
+			r.unregister <- c
 		}
 	}
 }
