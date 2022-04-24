@@ -40,12 +40,7 @@ func (r *Room) Run() {
 
 		case client := <-r.unregister:
 			r.Events["leave:"](r, client, nil)
-			_, ok := r.clients[client]
-
-			if ok {
-				delete(r.clients, client)
-				close(client.Channel)
-			}
+			delete(r.clients, client)
 
 		case s := <-r.message:
 			split := bytes.SplitAfterN(s.Message, []byte(":"), 2)
