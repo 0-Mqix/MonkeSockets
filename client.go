@@ -23,7 +23,7 @@ var (
 )
 
 type Client struct {
-	Room    *Room
+	Rooms   []*Room
 	Conn    *websocket.Conn
 	Channel chan []byte
 }
@@ -35,7 +35,10 @@ type SocketMessage struct {
 
 func (c *Client) ReadPump() {
 	defer func() {
-		c.Room.unregister <- c
+		// c.Rooms.unregister <- c
+		for _, r := range c.Rooms {
+			r.unregister <- c
+		}
 		c.Conn.Close()
 	}()
 	c.Conn.SetReadLimit(maxMessageSize)
@@ -49,7 +52,9 @@ func (c *Client) ReadPump() {
 			}
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-		c.Room.message <- SocketMessage{Message: message, Client: c}
+		for _, r := range c.Rooms {
+			r.message <- SocketMessage{Message: message, Client: c}
+		}
 	}
 }
 
@@ -105,6 +110,8 @@ func (c *Client) Send(event string, message []byte) {
 	case c.Channel <- append([]byte(event), message...):
 	default:
 		close(c.Channel)
-		delete(c.Room.clients, c)
+		for _, r := range c.Rooms {
+			delete(r.clients, c)
+		}
 	}
 }
