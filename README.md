@@ -27,27 +27,45 @@ monkeSocket.send("message:", "hi server")
 ```go
 package main
 
-func (room *MonkeSockets.Room) WebSocket(c echo.Context) error {
-	conn, err := upgrader.Upgrade(c.Response().Writer, c.Request(), nil)
+import (
+	"github.com/0-Mqix/MonkeSockets"
+	"github.com/gorilla/websocket"
+	"github.com/labstack/echo/v4"
+)
+
+var Upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+}
+
+func Connect(room *MonkeSockets.Room, c echo.Context) {
+	conn, err := Upgrader.Upgrade(c.Response().Writer, c.Request(), nil)
 	if err != nil {
-		return nil
+		return
 	}
-	client := &Client{room: MonkeSockets.room, conn: MonkeSockets.conn, send: make(chan []byte, 256)}
-	client.room.register <- client
+
+	client := &MonkeSockets.Client{Rooms: make([]*MonkeSockets.Room, 0), Conn: conn, Channel: make(chan []byte, 256)}
+	client.Rooms = append(client.Rooms, room)
+
+	room.Register <- client
 
 	go client.WritePump()
 	go client.ReadPump()
-	return nil
 }
 
 func main() {
 	e := echo.New()
-    e.Static("/static/js/MonkeSocket.js")
+	e.File("/static/js/index.js", "index.js")
+	e.File("/", "index.html")
 
-    r := MonkeSockets.New()
-    r.Run()
+	r := MonkeSockets.New()
+	go r.Run()
 
-    e.("/ws", r.WebSocket)
+	e.GET("/ws", func(c echo.Context) error {
+		Connect(r, c)
+		return nil
+	})
+
 	e.Logger.Fatal(e.Start(":8080"))
 }
 ```

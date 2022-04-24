@@ -5,5 +5,5 @@ import (
 )
 
 func Static(e *echo.Echo, path string) {
-	e.File(path, "MonkeSockets/MonkeSocket.js")
+	e.File(path, "MonkeSocket.js")
 }
