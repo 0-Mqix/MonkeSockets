@@ -25,7 +25,7 @@ var (
 type Client struct {
 	Room    *Room
 	Conn    *websocket.Conn
-	channel chan []byte
+	Channel chan []byte
 }
 
 type SocketMessage struct {
@@ -66,7 +66,7 @@ func (c *Client) WritePump() {
 	}()
 	for {
 		select {
-		case message, ok := <-c.channel:
+		case message, ok := <-c.Channel:
 			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if !ok {
 				// The hub closed the channel.
@@ -81,10 +81,10 @@ func (c *Client) WritePump() {
 			w.Write(message)
 
 			// Add queued chat messages to the current websocket message.
-			n := len(c.channel)
+			n := len(c.Channel)
 			for i := 0; i < n; i++ {
 				w.Write(newline)
-				w.Write(<-c.channel)
+				w.Write(<-c.Channel)
 			}
 
 			if err := w.Close(); err != nil {
@@ -102,9 +102,9 @@ func (c *Client) WritePump() {
 //sends message to the client
 func (c *Client) Send(event string, message []byte) {
 	select {
-	case c.channel <- append([]byte(event), message...):
+	case c.Channel <- append([]byte(event), message...):
 	default:
-		close(c.channel)
+		close(c.Channel)
 		delete(c.Room.clients, c)
 	}
 }
