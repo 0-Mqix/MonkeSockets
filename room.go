@@ -10,7 +10,7 @@ import (
 type Room struct {
 	clients    map[*Client]bool
 	message    chan SocketMessage
-	register   chan *Client
+	Register   chan *Client
 	unregister chan *Client
 	Events     map[string]func(*Room, *Client, []byte)
 }
@@ -18,7 +18,7 @@ type Room struct {
 func New() *Room {
 	return &Room{
 		message:    make(chan SocketMessage),
-		register:   make(chan *Client),
+		Register:   make(chan *Client),
 		unregister: make(chan *Client),
 		clients:    make(map[*Client]bool),
 
@@ -33,7 +33,7 @@ func New() *Room {
 func (r *Room) Run() {
 	for {
 		select {
-		case client := <-r.register:
+		case client := <-r.Register:
 			r.clients[client] = true
 			r.Events["join:"](r, client, nil)
 
