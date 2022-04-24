@@ -48,7 +48,7 @@ func (r *Room) Run() {
 
 		case s := <-r.message:
 			split := bytes.SplitAfterN(s.Message, []byte(":"), 2)
-			function, ok := r.Events[string(split[1])]
+			function, ok := r.Events[string(split[0])]
 			if ok {
 				function(r, s.Client, split[1])
 			}
