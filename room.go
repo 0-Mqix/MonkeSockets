@@ -5,6 +5,7 @@ package MonkeSockets
 
 import (
 	"bytes"
+	"fmt"
 )
 
 type Room struct {
@@ -48,6 +49,7 @@ func (r *Room) Run() {
 
 		case s := <-r.message:
 			split := bytes.SplitAfterN(s.Message, []byte(":"), 2)
+			fmt.Println(split)
 			function, ok := r.Events[string(split[0])]
 			if ok {
 				function(r, s.Client, split[1])
