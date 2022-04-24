@@ -43,7 +43,7 @@ func (r *Room) Run() {
 
 			if ok {
 				delete(r.clients, client)
-				close(client.send)
+				close(client.channel)
 			}
 
 		case s := <-r.message:
