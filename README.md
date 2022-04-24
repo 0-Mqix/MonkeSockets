@@ -25,6 +25,8 @@ monkeSocket.send("message:", "hi server")
 ## Use the Server
 #### Go
 ```go
+package main
+
 func (room *MonkeSockets.Room) WebSocket(c echo.Context) error {
 	conn, err := upgrader.Upgrade(c.Response().Writer, c.Request(), nil)
 	if err != nil {
