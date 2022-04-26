@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/labstack/echo/v4"
 )
 
 const (
@@ -26,6 +27,7 @@ type Client struct {
 	Rooms   []*Room
 	Conn    *websocket.Conn
 	Channel chan []byte
+	Echo    echo.Context
 }
 
 type SocketMessage struct {
