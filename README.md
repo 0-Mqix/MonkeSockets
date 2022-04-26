@@ -44,7 +44,7 @@ func Connect(room *MonkeSockets.Room, c echo.Context) {
 		return
 	}
 
-	client := &MonkeSockets.Client{Rooms: make([]*MonkeSockets.Room, 0), Conn: conn, Channel: make(chan []byte, 256)}
+	client := &MonkeSockets.Client{Rooms: make([]*MonkeSockets.Room, 0), Conn: conn, Channel: make(chan []byte, 256), Echo: c}
 	client.Rooms = append(client.Rooms, room)
 
 	room.Register <- client
