@@ -5,6 +5,7 @@ package MonkeSockets
 
 import (
 	"bytes"
+	"fmt"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -53,6 +54,7 @@ func (c *Client) ReadPump() {
 		}
 		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
 		for _, r := range c.Rooms {
+			fmt.Println(message)
 			r.message <- SocketMessage{Message: message, Client: c}
 		}
 	}
