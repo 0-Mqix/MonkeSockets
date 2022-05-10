@@ -39,3 +39,5 @@ class MonkeSocket {
         this.conn.send(event+message)
     }
 }
+
+//this is a test for the cdn :D
