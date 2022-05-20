@@ -1,33 +1,14 @@
-// Copyright 2013 The Gorilla WebSocket Authors. All rights reserved.
-//Modified by MqixSchool
-
 package MonkeSockets
 
 import (
-	"bytes"
-	"time"
-
-	"github.com/gorilla/websocket"
-	"github.com/labstack/echo/v4"
-)
-
-const (
-	writeWait      = 10 * time.Second
-	pongWait       = 60 * time.Second
-	pingPeriod     = (pongWait * 9) / 10
-	maxMessageSize = 512
-)
-
-var (
-	newline = []byte{'\n'}
-	space   = []byte{' '}
+	"github.com/gofiber/websocket/v2"
 )
 
 type Client struct {
-	Rooms   []*Room
+	Rooms   map[string]*Room
 	Conn    *websocket.Conn
 	Channel chan []byte
-	Echo    echo.Context
+	Closed  bool
 }
 
 type SocketMessage struct {
@@ -35,71 +16,45 @@ type SocketMessage struct {
 	Message []byte
 }
 
-func (c *Client) ReadPump() {
-	defer func() {
-		// c.Rooms.unregister <- c
-		for _, r := range c.Rooms {
-			r.unregister <- c
-		}
-		c.Conn.Close()
-	}()
-	c.Conn.SetReadLimit(maxMessageSize)
-	c.Conn.SetReadDeadline(time.Now().Add(pongWait))
-	c.Conn.SetPongHandler(func(string) error { c.Conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
-	for {
-		_, message, err := c.Conn.ReadMessage()
-		if err != nil {
-			break
-		}
-		message = bytes.TrimSpace(bytes.Replace(message, newline, space, -1))
-		for _, r := range c.Rooms {
-			r.message <- SocketMessage{Message: message, Client: c}
-		}
+func (c *Client) Disconnect() {
+	if c.Closed {
+		return
+	}
+
+	c.Closed = true
+	close(c.Channel)
+
+	c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+
+	for _, r := range c.Rooms {
+		r.unregister <- c
 	}
 }
 
-// writePump pumps messages from the hub to the websocket connection.
-//
-// A goroutine running writePump is started for each connection. The
-// application ensures that there is at most one writer to a connection by
-// executing all writes from this goroutine.
-func (c *Client) WritePump() {
-	ticker := time.NewTicker(pingPeriod)
-	defer func() {
-		ticker.Stop()
-		c.Conn.Close()
-	}()
+func (c *Client) Writer() {
 	for {
-		select {
-		case message, ok := <-c.Channel:
-			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if !ok {
-				// The hub closed the channel.
-				c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
-				return
-			}
+		message, ok := <-c.Channel
 
-			w, err := c.Conn.NextWriter(websocket.TextMessage)
-			if err != nil {
-				return
-			}
-			w.Write(message)
+		if !ok {
+			c.Disconnect()
+			return
+		}
 
-			// Add queued chat messages to the current websocket message.
-			n := len(c.Channel)
-			for i := 0; i < n; i++ {
-				w.Write(newline)
-				w.Write(<-c.Channel)
-			}
+		c.Conn.WriteMessage(websocket.TextMessage, message)
+	}
 
-			if err := w.Close(); err != nil {
-				return
-			}
-		case <-ticker.C:
-			c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
-			if err := c.Conn.WriteMessage(websocket.PingMessage, nil); err != nil {
-				return
-			}
+}
+
+func (c *Client) Reader() {
+	for {
+		_, message, err := c.Conn.ReadMessage()
+		if err != nil {
+			c.Disconnect()
+			return
+		}
+
+		for _, r := range c.Rooms {
+			r.message <- SocketMessage{Message: message, Client: c}
 		}
 	}
 }
@@ -109,9 +64,6 @@ func (c *Client) Send(event string, message []byte) {
 	select {
 	case c.Channel <- append([]byte(event), message...):
 	default:
-		close(c.Channel)
-		for _, r := range c.Rooms {
-			r.unregister <- c
-		}
+		c.Disconnect()
 	}
 }
