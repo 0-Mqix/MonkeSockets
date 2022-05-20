@@ -1,9 +1,6 @@
 package MonkeSockets
 
 import (
-	"fmt"
-	"log"
-
 	"github.com/gofiber/websocket/v2"
 )
 
@@ -11,6 +8,7 @@ type Client struct {
 	Rooms   map[string]*Room
 	Conn    *websocket.Conn
 	Channel chan []byte
+	Closed  bool
 }
 
 type SocketMessage struct {
@@ -19,9 +17,15 @@ type SocketMessage struct {
 }
 
 func (c *Client) Disconnect() {
-	fmt.Println("disconect")
-	c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+	if c.Closed {
+		return
+	}
+
+	c.Closed = true
 	close(c.Channel)
+
+	c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
+
 	for _, r := range c.Rooms {
 		r.unregister <- c
 	}
@@ -45,11 +49,13 @@ func (c *Client) Reader() {
 	for {
 		_, message, err := c.Conn.ReadMessage()
 		if err != nil {
-			log.Fatal(err)
 			c.Disconnect()
+			return
 		}
 
-		log.Printf("incomming: %s", message)
+		for _, r := range c.Rooms {
+			r.message <- SocketMessage{Message: message, Client: c}
+		}
 	}
 }
 

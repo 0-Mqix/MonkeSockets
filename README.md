@@ -29,43 +29,46 @@ package main
 
 import (
 	"github.com/0-Mqix/MonkeSockets"
-	"github.com/gorilla/websocket"
-	"github.com/labstack/echo/v4"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/websocket/v2"
 )
 
-var Upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-}
-
-func Connect(room *MonkeSockets.Room, c echo.Context) {
-	conn, err := Upgrader.Upgrade(c.Response().Writer, c.Request(), nil)
-	if err != nil {
-		return
-	}
-
-	client := &MonkeSockets.Client{Rooms: make([]*MonkeSockets.Room, 0), Conn: conn, Channel: make(chan []byte, 256), Echo: c}
-	client.Rooms = append(client.Rooms, room)
-
-	room.Register <- client
-
-	go client.WritePump()
-	go client.ReadPump()
-}
 
 func main() {
-	e := echo.New()
-	e.File("/static/js/index.js", "index.js")
-	e.File("/", "index.html")
+	r := fiber.New()
 
-	r := MonkeSockets.New()
-	go r.Run()
+	r.Static("/", "./public")
 
-	e.GET("/ws", func(c echo.Context) error {
-		Connect(r, c)
-		return nil
+	rooms := make(map[string]*MonkeSockets.Room)
+	room := MonkeSockets.New()
+	go room.Run()
+
+	rooms["default"] = room
+
+	r.Use("/ws", func(c *fiber.Ctx) error {
+		if websocket.IsWebSocketUpgrade(c) {
+			c.Locals("allowed", true)
+			return c.Next()
+		}
+		return fiber.ErrUpgradeRequired
 	})
 
-	e.Logger.Fatal(e.Start(":8080"))
+	r.Get("/ws/:id", websocket.New(func(c *websocket.Conn) {
+		client := &MonkeSockets.Client{Rooms: rooms, Conn: c, Channel: make(chan []byte), Closed: false}
+
+		defer func() {
+			client.Disconnect()
+		}()
+
+		for name, room := range rooms {
+			room.Register <- client
+			client.Rooms[name] = room
+		}
+
+		go client.Writer()
+		client.Reader()
+	}))
+
+	r.Listen(":80")
 }
 ```
