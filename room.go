@@ -17,8 +17,8 @@ type Room struct {
 
 func New() *Room {
 	return &Room{
-		message:    make(chan SocketMessage),
 		Register:   make(chan *Client),
+		message:    make(chan SocketMessage),
 		unregister: make(chan *Client),
 		clients:    make(map[*Client]bool),
 
